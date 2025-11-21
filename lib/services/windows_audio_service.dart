@@ -63,14 +63,13 @@ class WindowsAudioService {
         }
       }
 
-      print('🎵 Windows: Setting audio source: $actualStreamUrl');
+      print('🎵 Windows: Setting audio URL: $actualStreamUrl');
 
       try {
-        await _audioPlayer.setAudioSource(
-          AudioSource.uri(Uri.parse(actualStreamUrl)),
-        ).timeout(const Duration(seconds: 20));
+        await _audioPlayer.setUrl(actualStreamUrl).timeout(const Duration(seconds: 20));
+        print('✅ Windows: Audio URL set successfully');
       } catch (e) {
-        print('❌ Windows: Failed to set audio source: $e');
+        print('❌ Windows: Failed to set audio URL: $e');
         throw Exception('Failed to load audio stream: $e');
       }
 
