@@ -424,27 +424,34 @@ class AppState extends ChangeNotifier {
         print('🪟 Using Windows audio service');
         try {
           await WindowsAudioService().playRadioStation(station);
-          print('✅ Station playing via Windows audio service');
+          print('✅ Station setup complete via Windows audio service');
 
-          // Sync state after playback starts
-          await Future.delayed(const Duration(milliseconds: 500));
-          _isPlaying = WindowsAudioService().isPlaying;
+          // Mark as playing immediately - the stream listener will update if it changes
+          _isPlaying = true;
           _isLoading = false;
-          print('🔄 Windows state sync: playing=$_isPlaying, loading=$_isLoading');
           notifyListeners();
+
+          // Add to last played
+          await StorageService.addLastPlayedStation(station);
+          _lastPlayedStations = await StorageService.getLastPlayedStations();
+          notifyListeners();
+
+          print('✅ Windows playback initiated successfully');
+          return; // Exit early for Windows
         } catch (e) {
           print('❌ Windows audio playback failed: $e');
           _isLoading = false;
           _isPlaying = false;
           notifyListeners();
+
+          // Show user-friendly error
+          if (e.toString().contains('timeout') || e.toString().contains('TimeoutException')) {
+            throw Exception('Station is not responding. Please try another station.');
+          } else if (e.toString().contains('Failed to load audio stream')) {
+            throw Exception('Unable to connect to station. The stream may be offline.');
+          }
           rethrow;
         }
-
-        // Add to last played
-        await StorageService.addLastPlayedStation(station);
-        _lastPlayedStations = await StorageService.getLastPlayedStations();
-        notifyListeners();
-        return; // Exit early for Windows
       }
 
       // Mobile platforms: Check permissions and use AudioService

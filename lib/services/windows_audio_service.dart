@@ -40,6 +40,7 @@ class WindowsAudioService {
   Future<void> playRadioStation(RadioStation station) async {
     try {
       print('🎵 Windows: Playing station: ${station.name}');
+      print('🎵 Windows: Station URL: ${station.url}');
       _currentStation = station;
 
       String actualStreamUrl = station.url;
@@ -48,7 +49,8 @@ class WindowsAudioService {
       if (station.url.contains('/play/') && !station.url.contains('.m3u') && !station.url.contains('.pls')) {
         print('🔍 Windows: Resolving streaming URL from play page...');
         try {
-          final resolvedUrl = await ScrapingService.getStreamUrlFromPlayPage(station.url);
+          final resolvedUrl = await ScrapingService.getStreamUrlFromPlayPage(station.url)
+              .timeout(const Duration(seconds: 15));
           if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
             actualStreamUrl = resolvedUrl;
             print('✅ Windows: Resolved streaming URL: $actualStreamUrl');
@@ -62,16 +64,29 @@ class WindowsAudioService {
       }
 
       print('🎵 Windows: Setting audio source: $actualStreamUrl');
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(Uri.parse(actualStreamUrl)),
-      );
+
+      try {
+        await _audioPlayer.setAudioSource(
+          AudioSource.uri(Uri.parse(actualStreamUrl)),
+        ).timeout(const Duration(seconds: 20));
+      } catch (e) {
+        print('❌ Windows: Failed to set audio source: $e');
+        throw Exception('Failed to load audio stream: $e');
+      }
 
       print('▶️  Windows: Starting playback...');
-      await _audioPlayer.play();
-      print('✅ Windows: Playback started');
+      try {
+        await _audioPlayer.play();
+        print('✅ Windows: Playback started successfully');
+      } catch (e) {
+        print('❌ Windows: Failed to start playback: $e');
+        throw Exception('Failed to start playback: $e');
+      }
 
     } catch (e) {
       print('❌ Windows: Error playing radio station: $e');
+      print('❌ Windows: Error type: ${e.runtimeType}');
+      _currentStation = null;
       rethrow;
     }
   }
