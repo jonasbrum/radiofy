@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "radiofy_app" "\0"
+            VALUE "CompanyName", "Radiofy" "\0"
+            VALUE "FileDescription", "Radiofy - World Radio at Your Fingertips" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "radiofy_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "radiofy_app.exe" "\0"
-            VALUE "ProductName", "radiofy_app" "\0"
+            VALUE "InternalName", "Radiofy" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 Radiofy. All rights reserved." "\0"
+            VALUE "OriginalFilename", "radiofy.exe" "\0"
+            VALUE "ProductName", "Radiofy" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

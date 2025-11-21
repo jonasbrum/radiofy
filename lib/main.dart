@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
@@ -5,6 +6,7 @@ import 'providers/app_state.dart';
 import 'services/storage_service.dart';
 import 'services/audio_handler.dart';
 import 'services/simple_audio_handler.dart';
+import 'services/windows_audio_service.dart';
 import 'services/notification_permission_service.dart';
 import 'screens/setup_screen.dart';
 import 'screens/main_screen.dart';
@@ -33,14 +35,20 @@ void resetAudioServiceState() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize storage service
   await StorageService.init();
-  
-  // Don't initialize AudioService in background - will be done on first use
-  print('🔧 AudioService will be initialized on first use');
-  // _initializeAudioServiceInBackground();
-  
+
+  // Initialize Windows audio service if on Windows
+  if (Platform.isWindows) {
+    print('🪟 Running on Windows - using Windows audio service');
+    await WindowsAudioService().initialize();
+  } else {
+    // Don't initialize AudioService in background - will be done on first use
+    print('🔧 AudioService will be initialized on first use');
+    // _initializeAudioServiceInBackground();
+  }
+
   runApp(const MyApp());
 }
 

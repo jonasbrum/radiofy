@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import '../models/radio_station.dart';
 import '../services/storage_service.dart';
 import '../services/scraping_service.dart';
+import '../services/windows_audio_service.dart';
 import '../services/notification_permission_service.dart';
 import '../main.dart';
 
@@ -68,7 +70,33 @@ class AppState extends ChangeNotifier {
   }
 
   void _initializeAudioPlayer() {
-    // Setup fallback player
+    // On Windows, use WindowsAudioService
+    if (Platform.isWindows) {
+      print('🪟 Setting up Windows audio service listeners');
+      final windowsAudio = WindowsAudioService();
+      _fallbackPlayerSubscription = windowsAudio.playerStateStream.listen((playerState) {
+        print('🪟 Windows audio state: playing=${playerState.playing}, processing=${playerState.processingState}');
+
+        final isLoadingOrBuffering = playerState.processingState == ProcessingState.loading ||
+                                    playerState.processingState == ProcessingState.buffering;
+
+        _isLoading = isLoadingOrBuffering;
+
+        // Update playing state based on processing state
+        if (playerState.processingState == ProcessingState.ready) {
+          _isPlaying = playerState.playing;
+        } else if (isLoadingOrBuffering) {
+          _isPlaying = false; // Show as not playing but loading
+        } else {
+          _isPlaying = playerState.playing;
+        }
+
+        notifyListeners();
+      });
+      return;
+    }
+
+    // Setup fallback player for mobile platforms
     _fallbackPlayerSubscription = _fallbackPlayer.playerStateStream.listen((playerState) {
       // Only use fallback player state if AudioService is completely unavailable
       if (audioHandler == null) {
@@ -412,10 +440,28 @@ class AppState extends ChangeNotifier {
         print('✅ Audio service ready for playback');
       }
 
+      // Windows: Use WindowsAudioService
+      if (Platform.isWindows) {
+        print('🪟 Using Windows audio service');
+        try {
+          await WindowsAudioService().playRadioStation(station);
+          print('✅ Station playing via Windows audio service');
+
+          // Sync state after playback starts
+          await Future.delayed(const Duration(milliseconds: 100));
+          _isPlaying = WindowsAudioService().isPlaying;
+          _isLoading = false;
+          print('🔄 Windows state sync: playing=$_isPlaying, loading=$_isLoading');
+          notifyListeners();
+        } catch (e) {
+          print('❌ Windows audio playback failed: $e');
+          rethrow;
+        }
+      }
       // UNIFIED APPROACH: Use AudioService static methods for ALL controls
-      if (audioHandler != null) {
+      else if (audioHandler != null) {
         print('📱 Using unified AudioService approach');
-        
+
         try {
           // First, set up the station in the handler (this is necessary for media item setup)
           await audioHandler!.playRadioStation(station);
@@ -507,6 +553,18 @@ class AppState extends ChangeNotifier {
   Future<void> stopPlayback() async {
     print('⏹️ stopPlayback() called');
     try {
+      // Windows: Use WindowsAudioService
+      if (Platform.isWindows) {
+        print('🪟 Calling Windows audio stop');
+        await WindowsAudioService().stop();
+        _currentStation = null;
+        _isPlaying = false;
+        _isLoading = false;
+        notifyListeners();
+        print('✅ Windows audio stop completed');
+        return;
+      }
+
       // Ensure AudioService is ready before calling
       final isReady = await ensureAudioServiceReady();
       if (isReady && audioHandler != null) {
@@ -545,6 +603,16 @@ class AppState extends ChangeNotifier {
   Future<void> pausePlayback() async {
     print('⏸️ pausePlayback() called');
     try {
+      // Windows: Use WindowsAudioService
+      if (Platform.isWindows) {
+        print('🪟 Calling Windows audio pause');
+        await WindowsAudioService().pause();
+        _isPlaying = false;
+        notifyListeners();
+        print('✅ Windows audio pause completed');
+        return;
+      }
+
       // Ensure AudioService is ready before calling
       final isReady = await ensureAudioServiceReady();
       if (isReady && audioHandler != null) {
@@ -576,6 +644,16 @@ class AppState extends ChangeNotifier {
   Future<void> resumePlayback() async {
     print('▶️ resumePlayback() called');
     try {
+      // Windows: Use WindowsAudioService
+      if (Platform.isWindows) {
+        print('🪟 Calling Windows audio play');
+        await WindowsAudioService().play();
+        _isPlaying = true;
+        notifyListeners();
+        print('✅ Windows audio play completed');
+        return;
+      }
+
       // Ensure AudioService is ready before calling
       final isReady = await ensureAudioServiceReady();
       if (isReady && audioHandler != null) {
