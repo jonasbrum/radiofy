@@ -7,6 +7,7 @@ import 'services/storage_service.dart';
 import 'services/audio_handler.dart';
 import 'services/simple_audio_handler.dart';
 import 'services/windows_audio_service.dart';
+import 'services/debug_logger.dart';
 import 'services/notification_permission_service.dart';
 import 'screens/setup_screen.dart';
 import 'screens/main_screen.dart';
@@ -36,12 +37,18 @@ void resetAudioServiceState() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize debug logger
+  await DebugLogger.init();
+
   // Initialize storage service
   await StorageService.init();
 
   // Initialize Windows audio service if on Windows
   if (Platform.isWindows) {
+    await DebugLogger.log('🪟 Running on Windows - using Windows audio service');
+    await DebugLogger.log('📁 Debug log location: ${DebugLogger.logFilePath}');
     print('🪟 Running on Windows - using Windows audio service');
+    print('📁 Debug log: ${DebugLogger.logFilePath}');
     await WindowsAudioService().initialize();
   } else {
     // Don't initialize AudioService in background - will be done on first use
