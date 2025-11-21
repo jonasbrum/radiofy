@@ -42,26 +42,28 @@ class WindowsAudioService {
       print('🎵 Windows: Playing station: ${station.name}');
       _currentStation = station;
 
-      String? streamUrl = station.streamUrl;
+      String actualStreamUrl = station.url;
 
-      // If no stream URL, try to scrape it
-      if (streamUrl == null || streamUrl.isEmpty) {
-        print('🔍 Windows: No stream URL, attempting to scrape...');
+      // If the URL is a play page, resolve it to actual streaming URL
+      if (station.url.contains('/play/') && !station.url.contains('.m3u') && !station.url.contains('.pls')) {
+        print('🔍 Windows: Resolving streaming URL from play page...');
         try {
-          streamUrl = await ScrapingService.getStreamUrl(station.url);
-          if (streamUrl == null || streamUrl.isEmpty) {
-            throw Exception('Could not find stream URL');
+          final resolvedUrl = await ScrapingService.getStreamUrlFromPlayPage(station.url);
+          if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
+            actualStreamUrl = resolvedUrl;
+            print('✅ Windows: Resolved streaming URL: $actualStreamUrl');
+          } else {
+            throw Exception('Could not resolve streaming URL for ${station.name}');
           }
-          print('✅ Windows: Found stream URL: $streamUrl');
         } catch (e) {
-          print('❌ Windows: Failed to scrape stream URL: $e');
+          print('❌ Windows: Failed to resolve stream URL: $e');
           throw Exception('Failed to get stream URL: $e');
         }
       }
 
-      print('🎵 Windows: Setting audio source: $streamUrl');
+      print('🎵 Windows: Setting audio source: $actualStreamUrl');
       await _audioPlayer.setAudioSource(
-        AudioSource.uri(Uri.parse(streamUrl)),
+        AudioSource.uri(Uri.parse(actualStreamUrl)),
       );
 
       print('▶️  Windows: Starting playback...');
