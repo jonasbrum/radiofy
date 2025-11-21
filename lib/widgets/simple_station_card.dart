@@ -54,9 +54,10 @@ class SimpleStationCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const Spacer(), // Equal spacing before logo
+
                   // Logo area (bigger and transparent)
                   Container(
                     height: 70,
@@ -113,24 +114,22 @@ class SimpleStationCard extends StatelessWidget {
                   ),
                   
                   const SizedBox(height: 6),
-                  
+
                   // Station name only
-                  Expanded(
-                    child: Text(
-                      station.name,
-                      style: TextStyle(
-                        color: isDisabled ? Colors.grey.shade600 : Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                  Text(
+                    station.name,
+                    style: TextStyle(
+                      color: isDisabled ? Colors.grey.shade600 : Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  
-                  const SizedBox(height: 6),
-                  
+
+                  const Spacer(), // Equal spacing after title
+
                   // Bottom row: Status and play button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
