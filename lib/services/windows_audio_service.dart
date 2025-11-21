@@ -39,52 +39,68 @@ class WindowsAudioService {
 
   Future<void> playRadioStation(RadioStation station) async {
     try {
-      print('🎵 Windows: Playing station: ${station.name}');
-      print('🎵 Windows: Station URL: ${station.url}');
+      print('=== WINDOWS AUDIO DEBUG START ===');
+      print('🎵 Station: ${station.name}');
+      print('🎵 City: ${station.city}, ${station.country}');
+      print('🎵 Original URL: ${station.url}');
+      print('🎵 URL contains /play/: ${station.url.contains('/play/')}');
+      print('🎵 URL contains .m3u: ${station.url.contains('.m3u')}');
+      print('🎵 URL contains .pls: ${station.url.contains('.pls')}');
+
       _currentStation = station;
 
       String actualStreamUrl = station.url;
 
       // If the URL is a play page, resolve it to actual streaming URL
       if (station.url.contains('/play/') && !station.url.contains('.m3u') && !station.url.contains('.pls')) {
-        print('🔍 Windows: Resolving streaming URL from play page...');
+        print('🔍 Windows: URL needs resolution, calling getStreamUrlFromPlayPage...');
         try {
           final resolvedUrl = await ScrapingService.getStreamUrlFromPlayPage(station.url)
               .timeout(const Duration(seconds: 15));
+          print('🔍 Resolution result: $resolvedUrl');
+
           if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
             actualStreamUrl = resolvedUrl;
-            print('✅ Windows: Resolved streaming URL: $actualStreamUrl');
+            print('✅ Resolved to: $actualStreamUrl');
           } else {
+            print('❌ Resolution returned null or empty');
             throw Exception('Could not resolve streaming URL for ${station.name}');
           }
         } catch (e) {
-          print('❌ Windows: Failed to resolve stream URL: $e');
+          print('❌ Resolution error: $e');
+          print('❌ Error stack: ${StackTrace.current}');
           throw Exception('Failed to get stream URL: $e');
         }
+      } else {
+        print('ℹ️  Using direct URL (no resolution needed)');
       }
 
-      print('🎵 Windows: Setting audio URL: $actualStreamUrl');
+      print('🎵 Final URL to play: $actualStreamUrl');
+      print('🎵 Calling audioPlayer.setUrl()...');
 
       try {
         await _audioPlayer.setUrl(actualStreamUrl).timeout(const Duration(seconds: 20));
-        print('✅ Windows: Audio URL set successfully');
+        print('✅ setUrl() completed successfully');
       } catch (e) {
-        print('❌ Windows: Failed to set audio URL: $e');
+        print('❌ setUrl() failed with error: $e');
+        print('❌ Error type: ${e.runtimeType}');
+        print('❌ Error details: ${e.toString()}');
         throw Exception('Failed to load audio stream: $e');
       }
 
-      print('▶️  Windows: Starting playback...');
+      print('▶️  Calling audioPlayer.play()...');
       try {
         await _audioPlayer.play();
-        print('✅ Windows: Playback started successfully');
+        print('✅ play() completed successfully');
+        print('=== WINDOWS AUDIO DEBUG END ===');
       } catch (e) {
-        print('❌ Windows: Failed to start playback: $e');
+        print('❌ play() failed with error: $e');
         throw Exception('Failed to start playback: $e');
       }
 
     } catch (e) {
-      print('❌ Windows: Error playing radio station: $e');
-      print('❌ Windows: Error type: ${e.runtimeType}');
+      print('❌ FINAL ERROR: $e');
+      print('❌ Error type: ${e.runtimeType}');
       _currentStation = null;
       rethrow;
     }
