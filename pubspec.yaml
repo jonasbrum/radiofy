@@ -37,6 +37,7 @@ dependencies:
   
   # Audio streaming
   just_audio: ^0.9.39
+  just_audio_windows: ^0.2.1  # Required for Windows support
   
   # HTTP requests and web scraping
   http: ^1.1.0
