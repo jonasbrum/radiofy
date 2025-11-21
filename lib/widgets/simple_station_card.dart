@@ -54,7 +54,8 @@ class SimpleStationCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Logo area (bigger and transparent)
                   Container(

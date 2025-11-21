@@ -276,7 +276,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.85, // Make cards slightly taller than wide
+              childAspectRatio: 1.21, // Reduced card height by 30% (was 0.85)
             ),
             // Add extra item for loading indicator at the bottom if still loading
             itemCount: stations.length + (_isLoadingStations ? 1 : 0),
