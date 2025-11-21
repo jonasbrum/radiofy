@@ -52,13 +52,13 @@ class SimpleStationCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: null, // Disable card tap - only play button should work
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Logo area (bigger and transparent)
                   Container(
-                    height: 100,
+                    height: 70,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.transparent,
@@ -111,7 +111,7 @@ class SimpleStationCard extends StatelessWidget {
                     ),
                   ),
                   
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   
                   // Station name only
                   Expanded(
@@ -128,7 +128,7 @@ class SimpleStationCard extends StatelessWidget {
                     ),
                   ),
                   
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   
                   // Bottom row: Status and play button
                   Row(
@@ -138,7 +138,7 @@ class SimpleStationCard extends StatelessWidget {
                       if (showPlaying)
                         Container(
                           width: 6,
-                          height: 6,
+                          height: 4,
                           decoration: const BoxDecoration(
                             color: Color(0xFFFF6B35),
                             shape: BoxShape.circle,
@@ -165,7 +165,7 @@ class SimpleStationCard extends StatelessWidget {
                       // Play button
                       Container(
                         width: 32,
-                        height: 32,
+                        height: 22,
                         decoration: BoxDecoration(
                           color: showPlaying
                               ? const Color(0xFFFF6B35)
@@ -218,7 +218,7 @@ class SimpleStationCard extends StatelessWidget {
                           icon: showLoading
                               ? const SizedBox(
                                   width: 12,
-                                  height: 12,
+                                  height: 8,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 1.5,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

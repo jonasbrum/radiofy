@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 import '../providers/app_state.dart';
 import '../models/radio_station.dart';
+import '../services/windows_audio_service.dart';
 
 class PlayerControls extends StatelessWidget {
   final AppState appState;
@@ -142,7 +144,15 @@ class PlayerControls extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
+                // Volume control (Windows only)
+                if (Platform.isWindows) ...[
+                  const SizedBox(width: 16),
+                  const _VolumeSlider(),
+                ],
+
+                const SizedBox(width: 16),
+
                 // Controls
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -242,5 +252,58 @@ class PlayerControls extends StatelessWidget {
             ),
           ),
         );
+  }
+}
+
+// Volume slider widget for Windows
+class _VolumeSlider extends StatefulWidget {
+  const _VolumeSlider();
+
+  @override
+  State<_VolumeSlider> createState() => _VolumeSliderState();
+}
+
+class _VolumeSliderState extends State<_VolumeSlider> {
+  double _volume = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          _volume == 0 ? Icons.volume_off : Icons.volume_up,
+          color: Colors.grey,
+          size: 20,
+        ),
+        SizedBox(
+          width: 100,
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 2,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              activeTrackColor: const Color(0xFFFF6B35),
+              inactiveTrackColor: Colors.grey.withOpacity(0.3),
+              thumbColor: const Color(0xFFFF6B35),
+              overlayColor: const Color(0xFFFF6B35).withOpacity(0.2),
+            ),
+            child: Slider(
+              value: _volume,
+              min: 0.0,
+              max: 1.0,
+              onChanged: (value) async {
+                setState(() {
+                  _volume = value;
+                });
+                if (Platform.isWindows) {
+                  await WindowsAudioService().setVolume(value);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
