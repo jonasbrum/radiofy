@@ -394,12 +394,16 @@ class AppState extends ChangeNotifier {
 
       // Stop any currently playing station (wrapped in try-catch to not block)
       try {
-        if (_isPlaying && audioHandler != null) {
+        if (_isPlaying) {
           print('🔄 Stopping current playback before switching stations...');
-          await AudioService.stop();
-          await Future.delayed(const Duration(milliseconds: 100));
-        } else if (_isPlaying && audioHandler == null) {
-          await _fallbackPlayer.stop();
+          if (Platform.isWindows) {
+            await WindowsAudioService().stop();
+          } else if (audioHandler != null) {
+            await AudioService.stop();
+            await Future.delayed(const Duration(milliseconds: 100));
+          } else {
+            await _fallbackPlayer.stop();
+          }
         }
       } catch (stopError) {
         print('⚠️ Error stopping previous playback (continuing anyway): $stopError');
@@ -414,33 +418,8 @@ class AppState extends ChangeNotifier {
 
       print('📻 Attempting to play ${station.name}');
       print('📻 Station URL: ${station.url}');
-      
-      // Check if we have necessary permissions
-      final hasNotificationPermission = await NotificationPermissionService.hasNotificationPermission();
-      final hasAudioPermission = await NotificationPermissionService.hasAudioPermission();
-      
-      if ((!hasNotificationPermission || !hasAudioPermission) && context != null) {
-        print('🔔 Requesting missing permissions...');
-        await NotificationPermissionService.requestAllPermissions(context);
-      }
-      
-      // Ensure audio service is initialized
-      print('🔧 Ensuring audio service is ready...');
-      final isReady = await ensureAudioServiceReady();
-      
-      // Also ensure AudioService listeners are connected
-      if (isReady && !_audioServiceListenersConnected) {
-        print('🔧 Connecting AudioService listeners now...');
-        connectToAudioService();
-      }
-      
-      if (!isReady) {
-        print('❌ Audio service FAILED to initialize, using fallback');
-      } else {
-        print('✅ Audio service ready for playback');
-      }
 
-      // Windows: Use WindowsAudioService
+      // Windows: Use WindowsAudioService (skip AudioService entirely)
       if (Platform.isWindows) {
         print('🪟 Using Windows audio service');
         try {
@@ -448,18 +427,53 @@ class AppState extends ChangeNotifier {
           print('✅ Station playing via Windows audio service');
 
           // Sync state after playback starts
-          await Future.delayed(const Duration(milliseconds: 100));
+          await Future.delayed(const Duration(milliseconds: 500));
           _isPlaying = WindowsAudioService().isPlaying;
           _isLoading = false;
           print('🔄 Windows state sync: playing=$_isPlaying, loading=$_isLoading');
           notifyListeners();
         } catch (e) {
           print('❌ Windows audio playback failed: $e');
+          _isLoading = false;
+          _isPlaying = false;
+          notifyListeners();
           rethrow;
         }
+
+        // Add to last played
+        await StorageService.addLastPlayedStation(station);
+        _lastPlayedStations = await StorageService.getLastPlayedStations();
+        notifyListeners();
+        return; // Exit early for Windows
       }
-      // UNIFIED APPROACH: Use AudioService static methods for ALL controls
-      else if (audioHandler != null) {
+
+      // Mobile platforms: Check permissions and use AudioService
+      final hasNotificationPermission = await NotificationPermissionService.hasNotificationPermission();
+      final hasAudioPermission = await NotificationPermissionService.hasAudioPermission();
+
+      if ((!hasNotificationPermission || !hasAudioPermission) && context != null) {
+        print('🔔 Requesting missing permissions...');
+        await NotificationPermissionService.requestAllPermissions(context);
+      }
+
+      // Ensure audio service is initialized
+      print('🔧 Ensuring audio service is ready...');
+      final isReady = await ensureAudioServiceReady();
+
+      // Also ensure AudioService listeners are connected
+      if (isReady && !_audioServiceListenersConnected) {
+        print('🔧 Connecting AudioService listeners now...');
+        connectToAudioService();
+      }
+
+      if (!isReady) {
+        print('❌ Audio service FAILED to initialize, using fallback');
+      } else {
+        print('✅ Audio service ready for playback');
+      }
+
+      // Mobile: Use AudioService
+      if (audioHandler != null) {
         print('📱 Using unified AudioService approach');
 
         try {
