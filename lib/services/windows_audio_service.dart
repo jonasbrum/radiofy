@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:just_audio/just_audio.dart';
 import '../models/radio_station.dart';
 import 'scraping_service.dart';
+import 'stream_url_resolver.dart';
 import 'debug_logger.dart';
 
 /// Windows-specific audio service that uses just_audio directly
@@ -74,6 +75,22 @@ class WindowsAudioService {
         }
       } else {
         await DebugLogger.log('ℹ️  Using direct URL (no resolution needed)');
+      }
+
+      // Resolve playlist formats (PLS, M3U) and YouTube URLs to actual stream URLs
+      await DebugLogger.log('🔍 Checking if URL needs format resolution (PLS/M3U/YouTube)...');
+      try {
+        final resolvedStreamUrl = await StreamUrlResolver.resolveUrl(actualStreamUrl);
+        if (resolvedStreamUrl != actualStreamUrl) {
+          await DebugLogger.log('✅ Resolved to different URL: $resolvedStreamUrl');
+          actualStreamUrl = resolvedStreamUrl;
+        } else {
+          await DebugLogger.log('ℹ️  URL format resolution not needed or same URL returned');
+        }
+      } catch (e) {
+        await DebugLogger.log('⚠️ URL format resolution failed: $e');
+        await DebugLogger.log('⚠️ Will try to play original URL anyway');
+        // Continue with original URL if resolution fails
       }
 
       await DebugLogger.log('🎵 Final URL to play: $actualStreamUrl');
