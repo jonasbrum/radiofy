@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import '../models/radio_station.dart';
 import '../services/storage_service.dart';
 import '../services/scraping_service.dart';
+import '../services/stream_url_resolver.dart';
 import '../services/windows_audio_service.dart';
 import '../services/notification_permission_service.dart';
 import '../main.dart';
@@ -319,8 +320,12 @@ class AppState extends ChangeNotifier {
       final batch = stations.skip(i).take(batchSize).toList();
 
       try {
-        // Validate this batch
-        final validatedBatch = await ScrapingService.validateStations(batch);
+        // Pass the currently playing station to validation so it's not marked offline
+        final currentlyPlayingStation = _isPlaying ? _currentStation : null;
+        final validatedBatch = await ScrapingService.validateStations(
+          batch,
+          currentlyPlayingStation: currentlyPlayingStation,
+        );
 
         // Update the corresponding stations in _allStations
         for (var validated in validatedBatch) {
@@ -328,7 +333,17 @@ class AppState extends ChangeNotifier {
             s.name == validated.name && s.frequency == validated.frequency
           );
           if (index != -1) {
-            _allStations[index] = validated;
+            // Don't update if this is the currently playing station
+            final isCurrentlyPlaying = _isPlaying &&
+                                      _currentStation != null &&
+                                      _currentStation!.name == validated.name &&
+                                      _currentStation!.frequency == validated.frequency;
+
+            if (!isCurrentlyPlaying) {
+              _allStations[index] = validated;
+            } else {
+              print('🎵 Skipping update for currently playing station: ${validated.name}');
+            }
           }
         }
 
@@ -555,6 +570,14 @@ class AppState extends ChangeNotifier {
         } else {
           throw Exception('Radio is Offline, try again later');
         }
+      }
+
+      // Resolve playlist formats (PLS, M3U) and YouTube URLs to actual stream URLs
+      print('🔍 Checking if fallback URL needs format resolution...');
+      final resolvedStreamUrl = await StreamUrlResolver.resolveUrl(actualStreamUrl);
+      if (resolvedStreamUrl != actualStreamUrl) {
+        print('✅ Fallback resolved to different URL: $resolvedStreamUrl');
+        actualStreamUrl = resolvedStreamUrl;
       }
 
       print('📻 Starting fallback playback: $actualStreamUrl');

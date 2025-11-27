@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/radio_station.dart';
 import 'scraping_service.dart';
+import 'stream_url_resolver.dart';
 
 class RadioAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -114,6 +115,14 @@ class RadioAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler 
         } else {
           throw Exception('Could not resolve streaming URL for ${station.name}');
         }
+      }
+
+      // Resolve playlist formats (PLS, M3U) and YouTube URLs to actual stream URLs
+      print('🔍 Checking if URL needs format resolution...');
+      final resolvedStreamUrl = await StreamUrlResolver.resolveUrl(actualStreamUrl);
+      if (resolvedStreamUrl != actualStreamUrl) {
+        print('✅ Resolved to different URL: $resolvedStreamUrl');
+        actualStreamUrl = resolvedStreamUrl;
       }
 
       print('📻 Starting playback of $actualStreamUrl');

@@ -809,14 +809,36 @@ class ScrapingService {
   }
 
   /// Validate multiple stations concurrently with batch processing
-  static Future<List<RadioStation>> validateStations(List<RadioStation> stations) async {
+  static Future<List<RadioStation>> validateStations(
+    List<RadioStation> stations, {
+    RadioStation? currentlyPlayingStation,
+  }) async {
     final List<RadioStation> validatedStations = [];
     const int batchSize = 10; // Process 10 stations at a time
-    
+
     for (int i = 0; i < stations.length; i += batchSize) {
       final batch = stations.skip(i).take(batchSize).toList();
-      
+
       final List<Future<RadioStation>> validationFutures = batch.map((station) async {
+        // If this is the currently playing station, keep it as online
+        final isCurrentlyPlaying = currentlyPlayingStation != null &&
+                                   station.name == currentlyPlayingStation.name &&
+                                   station.frequency == currentlyPlayingStation.frequency;
+
+        if (isCurrentlyPlaying) {
+          print('🎵 Skipping validation for currently playing station: ${station.name}');
+          return RadioStation(
+            name: station.name,
+            url: station.url,
+            city: station.city,
+            country: station.country,
+            frequency: station.frequency,
+            logoUrl: station.logoUrl,
+            isValid: true, // Currently playing, must be valid
+            isOnline: true, // Currently playing, must be online
+          );
+        }
+
         final validation = await validateStation(station);
         return RadioStation(
           name: station.name,
@@ -829,16 +851,16 @@ class ScrapingService {
           isOnline: validation['isOnline'] ?? false,
         );
       }).toList();
-      
+
       final batchResults = await Future.wait(validationFutures);
       validatedStations.addAll(batchResults);
-      
+
       // Add a small delay between batches to avoid overwhelming servers
       if (i + batchSize < stations.length) {
         await Future.delayed(const Duration(milliseconds: 100));
       }
     }
-    
+
     return validatedStations;
   }
 
